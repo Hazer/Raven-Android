@@ -18,7 +18,7 @@ import java.util.UUID;
 /**
  * Created by Hazer on 2/25/16.
  */
-class SentryEventBuilder implements Serializable {
+public class SentryEventBuilder implements Serializable {
 
     private static final long serialVersionUID = -8589756678369463988L;
 
