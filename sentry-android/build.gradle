@@ -1,7 +1,12 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
-project.ext.libraryVersion = '1.0-beta'
+
+def versionMajor = 0
+def versionMinor = 1
+def versionPatch = 0
+
+project.ext.libraryVersion = "${versionMajor}.${versionMinor}.${versionPatch}"
 
 android {
     compileSdkVersion 23
@@ -12,17 +17,19 @@ android {
     defaultConfig {
         minSdkVersion 15
         targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
+        versionCode versionMajor * 10000 + versionMinor * 100 + versionPatch
+        versionName "${versionMajor}.${versionMinor}.${versionPatch}"
 
         buildConfigField "String", "LIBRARY_VERSION", "\"${project.ext.libraryVersion}\""
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
@@ -40,8 +47,8 @@ ext {
 //    bintrayName = 'sentry-android'
 
 //    publishedGroupId = 'com.joshdholtz.sentry'
-    libraryName = 'sentry-android'
-    artifact = 'sentry-android'
+    libraryName = 'raven-android'
+    artifact = 'raven-android'
 
     libraryVersion = project.ext.libraryVersion
 
@@ -49,8 +56,6 @@ ext {
 
 //    siteUrl = 'https://github.com/nuuneoi/FBLikeAndroid'
 //    gitUrl = 'https://github.com/nuuneoi/FBLikeAndroid.git'
-
-
 
 //    developerId = 'joshdholtz'
 //    developerName = 'Josh Holtz'

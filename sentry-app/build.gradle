@@ -7,7 +7,7 @@ android {
     useLibrary 'org.apache.http.legacy'
 
     defaultConfig {
-        applicationId "com.joshdholtz.sentryapp"
+        applicationId "io.vithor.sentryapp"
         minSdkVersion 15
         targetSdkVersion 23
         versionCode 1
