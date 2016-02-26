@@ -1,5 +1,7 @@
 apply plugin: 'com.android.library'
 
+project.ext.libraryVersion = '1.0-beta'
+
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.2"
@@ -11,6 +13,8 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
+
+        buildConfigField "String", "LIBRARY_VERSION", "\"${project.ext.libraryVersion}\""
     }
     buildTypes {
         release {
@@ -34,12 +38,14 @@ ext {
     libraryName = 'sentry-android'
     artifact = 'sentry-android'
 
+    libraryVersion = project.ext.libraryVersion
+
     libraryDescription = 'A Sentry client for Android'
 
 //    siteUrl = 'https://github.com/nuuneoi/FBLikeAndroid'
 //    gitUrl = 'https://github.com/nuuneoi/FBLikeAndroid.git'
 
-    libraryVersion = '1.2.1'
+
 
 //    developerId = 'joshdholtz'
 //    developerName = 'Josh Holtz'

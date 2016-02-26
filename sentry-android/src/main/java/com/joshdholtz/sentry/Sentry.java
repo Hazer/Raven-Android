@@ -8,6 +8,7 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.joshdholtz.sentry.SentryEventBuilder.SentryEventLevel;
@@ -61,8 +62,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 public class Sentry {
-
-    private final static String VERSION = "0.2.0";
 
     Context context;
 
@@ -160,7 +159,7 @@ public class Sentry {
         Log.d("Sentry", "URI - " + dsn.getHostURI());
 
         header += "Sentry sentry_version=4,";
-        header += "sentry_client=sentry-android/" + VERSION + ",";
+        header += "sentry_client="+ getSentryClientInfo() + ",";
         header += "sentry_timestamp=" + System.currentTimeMillis() + ",";
         header += "sentry_key=" + dsn.getPublicKey() + ",";
         header += "sentry_secret=" + dsn.getSecretKey();
@@ -407,9 +406,7 @@ public class Sentry {
 
                 boolean success = false;
                 try {
-                    httpPost.setHeader("X-Sentry-Auth", createXSentryAuthHeader());
-                    httpPost.setHeader("User-Agent", "sentry-android/" + VERSION);
-                    httpPost.setHeader("Content-Type", "text/html; charset=utf-8");
+                    createBaseAuthHeaders(httpPost);
 
                     httpPost.setEntity(new StringEntity(request.getRequestData(), "utf-8"));
                     HttpResponse httpResponse = httpClient.execute(httpPost);
@@ -479,6 +476,17 @@ public class Sentry {
 
         }.execute();
 
+    }
+
+    private static void createBaseAuthHeaders(HttpPost httpPost) {
+        httpPost.setHeader("X-Sentry-Auth", createXSentryAuthHeader());
+        httpPost.setHeader("User-Agent", getSentryClientInfo());
+        httpPost.setHeader("Content-Type", "text/html; charset=utf-8");
+    }
+
+    @NonNull
+    private static String getSentryClientInfo() {
+        return "sentry-raven-android/" + BuildConfig.LIBRARY_VERSION;
     }
 
     private class SentryUncaughtExceptionHandler implements UncaughtExceptionHandler {
