@@ -1,4 +1,4 @@
-package com.joshdholtz.sentrytesting;
+package com.vithor.sentrytesting;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;

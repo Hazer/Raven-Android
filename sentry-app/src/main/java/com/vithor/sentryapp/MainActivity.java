@@ -1,11 +1,17 @@
-package com.joshdholtz.sentryapp;
+package com.vithor.sentryapp;
 
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.joshdholtz.sentry.Sentry;
+import org.json.JSONException;
+
+import io.vithor.sentry.DefaultSentryCaptureListener;
+import io.vithor.sentry.Sentry;
+import io.vithor.sentry.SentryEventBuilder;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -15,8 +21,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         String yourDSN = "";
-        Sentry.init(this, yourDSN);
-        Sentry.captureMessage("OMG this works woooo");
+        Sentry.INSTANCE.init(this, yourDSN, "0.4.2", new DefaultSentryCaptureListener() {
+
+            @NonNull
+            @Override
+            public SentryEventBuilder beforeCapture(@NonNull SentryEventBuilder builder) {
+                Log.d("Test", "Sentry event listener");
+                try {
+                    builder.getExtra().put("test", "Sending test");
+                    builder.getTags().put("test", true);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                return super.beforeCapture(builder);
+            }
+        });
+//        Sentry.init(this, yourDSN);
+        Sentry.INSTANCE.captureMessage("OMG this works woooo");
     }
 
     @Override
