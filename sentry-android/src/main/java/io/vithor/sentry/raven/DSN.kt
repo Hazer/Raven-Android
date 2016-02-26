@@ -1,4 +1,4 @@
-package io.vithor.sentry
+package io.vithor.sentry.raven
 
 import java.net.URI
 import java.net.URISyntaxException
@@ -164,7 +164,7 @@ internal class DSN(dsnString: String?) {
         if (this === other) return true
         if (other?.javaClass != javaClass) return false
 
-        other as io.DSN
+        other as DSN
 
         if (hostURI != other.hostURI) return false
 

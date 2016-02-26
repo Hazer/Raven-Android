@@ -1,4 +1,4 @@
-package io.vithor.sentry
+package io.vithor.sentry.raven
 
 import android.util.Log
 import org.json.JSONArray
@@ -29,7 +29,7 @@ class SentryEventBuilder() : Serializable {
         this.setTimestamp(System.currentTimeMillis())
     }
 
-    constructor(t: Throwable, level: io.SentryEventBuilder.SentryEventLevel) : this() {
+    constructor(t: Throwable, level: SentryEventBuilder.SentryEventLevel) : this() {
 
         val culprit = Sentry.getCause(t, t.message ?: t.cause?.message ?: "")
 
@@ -39,7 +39,7 @@ class SentryEventBuilder() : Serializable {
                 .setException(t)
     }
 
-    constructor(t: Throwable, level: io.SentryEventBuilder.SentryEventLevel, release: String) : this(t, level) {
+    constructor(t: Throwable, level: SentryEventBuilder.SentryEventLevel, release: String) : this(t, level) {
         setRelease(release)
     }
 
@@ -50,7 +50,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setMessage(message: String): io.SentryEventBuilder {
+    fun setMessage(message: String): SentryEventBuilder {
         event.put("message", message)
         return this
     }
@@ -62,8 +62,8 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setTimestamp(timestamp: Long): io.SentryEventBuilder {
-        event.put("timestamp", io.SentryEventBuilder.Companion.sdf.format(Date(timestamp)))
+    fun setTimestamp(timestamp: Long): SentryEventBuilder {
+        event.put("timestamp", SentryEventBuilder.Companion.sdf.format(Date(timestamp)))
         return this
     }
 
@@ -74,7 +74,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setRelease(release: String?): io.SentryEventBuilder {
+    fun setRelease(release: String?): SentryEventBuilder {
         if (release != null) event.put("release", release)
         return this
     }
@@ -86,7 +86,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setLevel(level: io.SentryEventBuilder.SentryEventLevel): io.SentryEventBuilder {
+    fun setLevel(level: SentryEventBuilder.SentryEventLevel): SentryEventBuilder {
         event.put("level", level.value)
         return this
     }
@@ -98,7 +98,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setLogger(logger: String): io.SentryEventBuilder {
+    fun setLogger(logger: String): SentryEventBuilder {
         event.put("logger", logger)
         return this
     }
@@ -110,7 +110,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setCulprit(culprit: String): io.SentryEventBuilder {
+    fun setCulprit(culprit: String): SentryEventBuilder {
         event.put("culprit", culprit)
         return this
     }
@@ -120,12 +120,12 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setUser(user: Map<String, String>): io.SentryEventBuilder {
+    fun setUser(user: Map<String, String>): SentryEventBuilder {
         setUser(JSONObject(user))
         return this
     }
 
-    fun setUser(user: JSONObject): io.SentryEventBuilder {
+    fun setUser(user: JSONObject): SentryEventBuilder {
         event.put("user", user)
         return this
     }
@@ -144,12 +144,12 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setTags(tags: Map<String, String>): io.SentryEventBuilder {
+    fun setTags(tags: Map<String, String>): SentryEventBuilder {
         setTags(JSONObject(tags))
         return this
     }
 
-    fun setTags(tags: JSONObject): io.SentryEventBuilder {
+    fun setTags(tags: JSONObject): SentryEventBuilder {
         event.put("tags", tags)
         return this
     }
@@ -168,7 +168,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setServerName(serverName: String): io.SentryEventBuilder {
+    fun setServerName(serverName: String): SentryEventBuilder {
         event.put("server_name", serverName)
         return this
     }
@@ -180,7 +180,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun addModule(name: String?, version: String?): io.SentryEventBuilder {
+    fun addModule(name: String?, version: String?): SentryEventBuilder {
         val modules: JSONArray
         if (!event.containsKey("modules")) {
             modules = JSONArray()
@@ -202,12 +202,12 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setExtra(extra: Map<String, String>): io.SentryEventBuilder {
+    fun setExtra(extra: Map<String, String>): SentryEventBuilder {
         setExtra(JSONObject(extra))
         return this
     }
 
-    fun setExtra(extra: JSONObject): io.SentryEventBuilder {
+    fun setExtra(extra: JSONObject): SentryEventBuilder {
         event.put("extra", extra)
         return this
     }
@@ -226,7 +226,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setException(t: Throwable?): io.SentryEventBuilder {
+    fun setException(t: Throwable?): SentryEventBuilder {
         var t = t
         val values = JSONArray()
 
@@ -237,7 +237,7 @@ class SentryEventBuilder() : Serializable {
                 exception.put("type", t.javaClass.simpleName)
                 exception.put("value", t.message)
                 exception.put("module", t.javaClass.`package`.name)
-                exception.put("stacktrace", io.SentryEventBuilder.Companion.getStackTrace(t))
+                exception.put("stacktrace", SentryEventBuilder.getStackTrace(t))
 
                 values.put(exception)
             } catch (e: JSONException) {
@@ -266,7 +266,7 @@ class SentryEventBuilder() : Serializable {
         private val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
 
         init {
-            io.SentryEventBuilder.Companion.sdf.timeZone = TimeZone.getTimeZone("GMT")
+            sdf.timeZone = TimeZone.getTimeZone("GMT")
         }
 
         @Throws(JSONException::class)

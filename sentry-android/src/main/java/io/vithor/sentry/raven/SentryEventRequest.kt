@@ -1,4 +1,4 @@
-package io.vithor.sentry
+package io.vithor.sentry.raven
 
 import org.json.JSONObject
 
@@ -25,7 +25,7 @@ internal class SentryEventRequest(builder: SentryEventBuilder) : Serializable {
     }
 
     override fun equals(other: Any?): Boolean {
-        val otherRequest = other as io.SentryEventRequest?
+        val otherRequest = other as SentryEventRequest?
         return uuid == otherRequest?.uuid
     }
 

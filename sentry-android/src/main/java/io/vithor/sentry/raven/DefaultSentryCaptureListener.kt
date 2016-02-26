@@ -1,4 +1,4 @@
-package io.vithor.sentry
+package io.vithor.sentry.raven
 
 import android.support.annotation.CallSuper
 import android.util.Log

@@ -1,4 +1,4 @@
-package io.vithor.sentry;
+package io.vithor.sentry.raven;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

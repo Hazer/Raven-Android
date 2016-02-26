@@ -9,9 +9,10 @@ import android.view.MenuItem;
 
 import org.json.JSONException;
 
-import io.vithor.sentry.DefaultSentryCaptureListener;
-import io.vithor.sentry.Sentry;
-import io.vithor.sentry.SentryEventBuilder;
+import io.vithor.sentry.raven.DefaultSentryCaptureListener;
+import io.vithor.sentry.raven.Sentry;
+import io.vithor.sentry.raven.SentryEventBuilder;
+
 
 public class MainActivity extends AppCompatActivity {
 

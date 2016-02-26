@@ -1,4 +1,4 @@
-package io.vithor.sentry;
+package io.vithor.sentry.raven;
 
 import org.apache.http.conn.ssl.SSLSocketFactory;
 

@@ -1,4 +1,4 @@
-package io.vithor.sentry
+package io.vithor.sentry.raven
 
 import android.content.Context
 import android.content.pm.PackageManager
@@ -9,7 +9,7 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
 import com.vithor.sentry.BuildConfig
-import io.vithor.sentry.SentryEventBuilder.SentryEventLevel
+import io.vithor.sentry.raven.SentryEventBuilder.SentryEventLevel
 import org.apache.http.NameValuePair
 import org.apache.http.client.ClientProtocolException
 import org.apache.http.client.HttpClient
@@ -22,14 +22,11 @@ import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.params.HttpConnectionParams
 import java.io.*
 import java.lang.Thread.UncaughtExceptionHandler
-import java.net.Socket
 import java.net.URISyntaxException
-import java.net.UnknownHostException
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.Charset
-import java.security.*
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import javax.net.ssl.SSLContext
@@ -57,13 +54,13 @@ private constructor() {
         }
 
         // don't register again if already registered
-        if (currentHandler !is io.Sentry.SentryUncaughtExceptionHandler) {
+        if (currentHandler !is Sentry.SentryUncaughtExceptionHandler) {
             // Register default exceptions handler
             Thread.setDefaultUncaughtExceptionHandler(
                     SentryUncaughtExceptionHandler(currentHandler, context))
         }
 
-        io.Sentry.INSTANCE.sendAllCachedCapturedEvents()
+        sendAllCachedCapturedEvents()
     }
 
     private inner class SentryUncaughtExceptionHandler// constructor
@@ -73,9 +70,9 @@ private constructor() {
             // Here you should have a more robust, permanent record of problems
             var builder: SentryEventBuilder = SentryEventBuilder(e, SentryEventLevel.FATAL)
 
-            builder.setRelease(io.Sentry.INSTANCE.instance.release)
+            builder.setRelease(instance.release)
 
-            builder = io.Sentry.INSTANCE.instance.captureListener.beforeCapture(builder)// ?: builder
+            builder = instance.captureListener.beforeCapture(builder)// ?: builder
 
             //            if (builder != null) {
             InternalStorage.instance.addRequest(SentryEventRequest(builder))
@@ -96,10 +93,10 @@ private constructor() {
 
         internal val TAG = "Sentry"
 
-        internal val instance: io.Sentry by lazy { io.Sentry() }
+        internal val instance: Sentry by lazy { Sentry() }
 
         private fun init(captureListener: DefaultSentryCaptureListener = DefaultSentryCaptureListener()) {
-            io.Sentry.INSTANCE.instance.captureListener = captureListener
+            instance.captureListener = captureListener
         }
 
         //    public static void init(Context context, String dsn, SentryEventCaptureListener captureListener) {
@@ -111,20 +108,20 @@ private constructor() {
         //    }
 
         @JvmOverloads fun init(context: Context, dsn: String, release: String? = null, captureListener: DefaultSentryCaptureListener = DefaultSentryCaptureListener()) {
-            io.Sentry.INSTANCE.init(captureListener)
-            io.Sentry.INSTANCE.instance.context = context
-            io.Sentry.INSTANCE.instance.dsn = DSN(dsn)
-            io.Sentry.INSTANCE.instance.release = release
-            io.Sentry.INSTANCE.instance.packageName = context.packageName
-            io.Sentry.INSTANCE.instance.verifySsl = io.Sentry.INSTANCE.getVerifySsl(io.vithor.Sentry.INSTANCE.instance.dsn)
+            init(captureListener)
+            instance.context = context
+            instance.dsn = DSN(dsn)
+            instance.release = release
+            instance.packageName = context.packageName
+            instance.verifySsl = getVerifySsl(instance.dsn)
 
 
-            io.Sentry.INSTANCE.instance.setupUncaughtExceptionHandler()
+            instance.setupUncaughtExceptionHandler()
         }
 
         private fun getVerifySsl(dsn: DSN): Int {
             val verifySsl = 1
-            val params = io.Sentry.INSTANCE.getAllGetParams(dsn)
+            val params = getAllGetParams(dsn)
             if (params != null) {
                 for (param in params) {
                     if (param.name == "verify_ssl")
@@ -147,11 +144,11 @@ private constructor() {
         private fun createXSentryAuthHeader(): String {
             var header = ""
 
-            val dsn = io.Sentry.INSTANCE.instance.dsn
+            val dsn = instance.dsn
             Log.d("Sentry", "URI - " + dsn.hostURI)
 
             header += "Sentry sentry_version=4,"
-            header += "sentry_client=${io.Sentry.INSTANCE.sentryClientInfo},"
+            header += "sentry_client=${sentryClientInfo},"
             header += "sentry_timestamp=${System.currentTimeMillis()},"
             header += "sentry_key=${dsn.publicKey},"
             header += "sentry_secret=${dsn.secretKey}"
@@ -160,13 +157,13 @@ private constructor() {
         }
 
         private val projectId: String
-            get() = io.Sentry.INSTANCE.instance.dsn.projectId
+            get() = instance.dsn.projectId
 
         fun sendAllCachedCapturedEvents() {
             val unsentRequests = InternalStorage.instance.unsentRequests
-            Log.d(io.Sentry.INSTANCE.TAG, "Sending up " + unsentRequests.size + " cached response(s)")
+            Log.d(TAG, "Sending up " + unsentRequests.size + " cached response(s)")
             for (request in unsentRequests) {
-                io.Sentry.INSTANCE.doCaptureEventPost(request)
+                doCaptureEventPost(request)
             }
         }
 
@@ -174,29 +171,29 @@ private constructor() {
          * @param captureListener the captureListener to set
          */
         fun setCaptureListener(captureListener: DefaultSentryCaptureListener) {
-            io.Sentry.INSTANCE.instance.captureListener = captureListener
+            instance.captureListener = captureListener
         }
 
         fun getCaptureListener(): DefaultSentryCaptureListener {
-            return io.Sentry.INSTANCE.instance.captureListener
+            return instance.captureListener
         }
 
         fun captureMessage(message: String) {
-            io.Sentry.INSTANCE.captureMessage(message, SentryEventLevel.INFO)
+            captureMessage(message, SentryEventLevel.INFO)
         }
 
         fun captureMessage(message: String, level: SentryEventLevel) {
-            io.Sentry.INSTANCE.captureEvent(SentryEventBuilder().setMessage(message).setLevel(level))
+            captureEvent(SentryEventBuilder().setMessage(message).setLevel(level))
         }
 
         fun captureException(t: Throwable) {
-            io.Sentry.INSTANCE.captureException(t, SentryEventLevel.ERROR)
+            captureException(t, SentryEventLevel.ERROR)
         }
 
         fun captureException(t: Throwable, level: SentryEventLevel) {
-            val culprit = io.Sentry.INSTANCE.getCause(t, t.message ?: t.cause?.message ?: "")
+            val culprit = getCause(t, t.message ?: t.cause?.message ?: "")
 
-            io.Sentry.INSTANCE.captureEvent(
+            captureEvent(
                     SentryEventBuilder()
                             .setMessage(t.message ?: t.cause?.message ?: "")
                             .setCulprit(culprit)
@@ -215,7 +212,7 @@ private constructor() {
 
                 // Embed version in stacktrace filename
                 val stacktrace = File(getStacktraceLocation(context), "raven-" + random.toString() + ".stacktrace")
-                Log.d(io.Sentry.INSTANCE.TAG, "Writing unhandled exception to: " + stacktrace.absolutePath)
+                Log.d(TAG, "Writing unhandled exception to: " + stacktrace.absolutePath)
 
                 // Write the stacktrace to disk
                 val oos = ObjectOutputStream(FileOutputStream(stacktrace))
@@ -228,13 +225,13 @@ private constructor() {
                 ebos.printStackTrace()
             }
 
-            Log.d(io.Sentry.INSTANCE.TAG, result.toString())
+            Log.d(TAG, result.toString())
         }
 
         internal fun getCause(t: Throwable, culprit: String): String {
             var culpritL = culprit
             for (stackTrace in t.stackTrace) {
-                if (stackTrace.toString().contains(io.Sentry.INSTANCE.instance.packageName)) {
+                if (stackTrace.toString().contains(instance.packageName)) {
                     culpritL = stackTrace.toString()
                     break
                 }
@@ -256,12 +253,12 @@ private constructor() {
 
         fun captureEvent(builder: SentryEventBuilder) {
             var builder = builder
-            builder!!.setRelease(io.Sentry.INSTANCE.instance.release)
+            builder!!.setRelease(instance.release)
 
             val request: SentryEventRequest
 //            if (Sentry.instance.captureListener != null) {
 
-                builder = io.Sentry.INSTANCE.instance.captureListener.beforeCapture(builder)
+                builder = instance.captureListener.beforeCapture(builder)
 //                if (builder == null) {
 //                    Log.e(Sentry.TAG, "SentryEventBuilder in captureEvent is null")
 //                    return
@@ -272,18 +269,18 @@ private constructor() {
 //                request = SentryEventRequest(builder)
 //            }
 
-            Log.d(io.Sentry.INSTANCE.TAG, "Request - " + request.requestData)
+            Log.d(TAG, "Request - " + request.requestData)
 
             // Check if on main thread - if not, run on main thread
             if (Looper.myLooper() == Looper.getMainLooper()) {
-                io.Sentry.INSTANCE.doCaptureEventPost(request)
-            } else if (io.Sentry.INSTANCE.instance.context != null) {
+                doCaptureEventPost(request)
+            } else if (instance.context != null) {
 
                 val thread = object : HandlerThread("SentryThread") {
 
                 }
                 thread.start()
-                val runnable = Runnable { io.Sentry.INSTANCE.doCaptureEventPost(request) }
+                val runnable = Runnable { doCaptureEventPost(request) }
                 val h = Handler(thread.looper)
                 h.post(runnable)
 
@@ -292,13 +289,13 @@ private constructor() {
         }
 
         private fun shouldAttemptPost(): Boolean {
-            val pm = io.Sentry.INSTANCE.instance.context?.packageManager
-            val hasPerm = pm?.checkPermission(android.Manifest.permission.ACCESS_NETWORK_STATE, io.Sentry.INSTANCE.instance.context?.packageName)
+            val pm = instance.context?.packageManager
+            val hasPerm = pm?.checkPermission(android.Manifest.permission.ACCESS_NETWORK_STATE, instance.context?.packageName)
             if (hasPerm == PackageManager.PERMISSION_DENIED) {
                 return true
             }
 
-            val connectivityManager = io.Sentry.INSTANCE.instance.context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val connectivityManager = instance.context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val activeNetworkInfo = connectivityManager.activeNetworkInfo
             return activeNetworkInfo != null && activeNetworkInfo.isConnected
         }
@@ -337,7 +334,7 @@ private constructor() {
 
         private fun doCaptureEventPost(request: SentryEventRequest) {
 
-            if (!io.Sentry.INSTANCE.shouldAttemptPost()) {
+            if (!shouldAttemptPost()) {
                 InternalStorage.instance.addRequest(request)
                 return
             }
@@ -346,12 +343,12 @@ private constructor() {
                 override fun doInBackground(vararg params: Void): Void? {
 
                     val httpClient: HttpClient
-                    if (io.Sentry.INSTANCE.instance.verifySsl != 0) {
+                    if (instance.verifySsl != 0) {
                         httpClient = DefaultHttpClient()
                     } else {
-                        httpClient = io.Sentry.INSTANCE.getHttpsClient(DefaultHttpClient()) ?: DefaultHttpClient()
+                        httpClient = getHttpsClient(DefaultHttpClient()) ?: DefaultHttpClient()
                     }
-                    val httpPost = HttpPost(io.vithor.Sentry.INSTANCE.instance.dsn!!.hostURI.toString() + "api/" + io.vithor.Sentry.INSTANCE.projectId + "/store/")
+                    val httpPost = HttpPost(instance.dsn!!.hostURI.toString() + "api/" + projectId + "/store/")
 
                     val TIMEOUT_MILLISEC = 10000  // = 20 seconds
                     val httpParams = httpPost.params
@@ -360,7 +357,7 @@ private constructor() {
 
                     var success = false
                     try {
-                        io.Sentry.INSTANCE.createBaseAuthHeaders(httpPost)
+                        createBaseAuthHeaders(httpPost)
 
                         httpPost.entity = StringEntity(request.requestData, "utf-8")
                         val httpResponse = httpClient.execute(httpPost)
@@ -393,7 +390,7 @@ private constructor() {
 
                         success = status == 200
 
-                        Log.d(io.Sentry.INSTANCE.TAG, "SendEvent - $status $stringResponse")
+                        Log.d(TAG, "SendEvent - $status $stringResponse")
                     } catch (e: ClientProtocolException) {
                         e.printStackTrace()
                     } catch (e: IOException) {
@@ -438,8 +435,8 @@ private constructor() {
         }
 
         private fun createBaseAuthHeaders(httpPost: HttpPost) {
-            httpPost.setHeader("X-Sentry-Auth", io.Sentry.INSTANCE.createXSentryAuthHeader())
-            httpPost.setHeader("User-Agent", io.Sentry.INSTANCE.sentryClientInfo)
+            httpPost.setHeader("X-Sentry-Auth", createXSentryAuthHeader())
+            httpPost.setHeader("User-Agent", sentryClientInfo)
             httpPost.setHeader("Content-Type", "text/html; charset=utf-8")
         }
 

@@ -1,4 +1,4 @@
-package io.vithor.sentry
+package io.vithor.sentry.raven
 
 import android.content.Context
 import android.util.Log
@@ -49,7 +49,7 @@ internal class InternalStorage private constructor() {
 
     private fun writeObject(context: Context?, requests: ArrayList<SentryEventRequest>) {
         try {
-            val fos = context?.openFileOutput(io.InternalStorage.Companion.FILE_NAME, Context.MODE_PRIVATE)
+            val fos = context?.openFileOutput(InternalStorage.FILE_NAME, Context.MODE_PRIVATE)
             val oos = ObjectOutputStream(fos)
             oos.writeObject(requests)
             oos.close()
@@ -64,7 +64,7 @@ internal class InternalStorage private constructor() {
 
     private fun readObject(context: Context?): ArrayList<SentryEventRequest> {
         try {
-            val fis = context?.openFileInput(io.InternalStorage.Companion.FILE_NAME)
+            val fis = context?.openFileInput(InternalStorage.FILE_NAME)
             val ois = ObjectInputStream(fis)
             val requests = ois.readObject() as ArrayList<SentryEventRequest>
             return requests
@@ -85,6 +85,6 @@ internal class InternalStorage private constructor() {
 
         private val FILE_NAME = "unsent_requests"
 
-        val instance: io.InternalStorage by lazy { io.InternalStorage() }
+        val instance: InternalStorage by lazy { InternalStorage() }
     }
 }
