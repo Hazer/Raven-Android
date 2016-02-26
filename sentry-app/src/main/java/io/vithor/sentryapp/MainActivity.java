@@ -1,4 +1,4 @@
-package com.vithor.sentryapp;
+package io.vithor.sentryapp;
 
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;

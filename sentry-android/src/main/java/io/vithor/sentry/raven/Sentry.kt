@@ -8,7 +8,6 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
-import com.vithor.sentry.BuildConfig
 import io.vithor.sentry.raven.SentryEventBuilder.SentryEventLevel
 import org.apache.http.NameValuePair
 import org.apache.http.client.ClientProtocolException
