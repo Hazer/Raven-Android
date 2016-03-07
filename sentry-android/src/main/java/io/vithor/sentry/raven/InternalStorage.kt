@@ -13,7 +13,7 @@ import java.io.StreamCorruptedException
 import java.util.ArrayList
 
 /**
- * Created by Hazer on 2/25/16.
+ * Created by Vithorio Polten on 2/25/16.
  */
 internal class InternalStorage private constructor() {
     /**
@@ -26,7 +26,7 @@ internal class InternalStorage private constructor() {
     //    }
 
     init {
-        this.unsentRequests = this.readObject(Sentry.instance.context)
+        this.unsentRequests = this.readObject(Sentry.sharedClient.context)
     }
 
     fun addRequest(request: SentryEventRequest) {
@@ -34,7 +34,7 @@ internal class InternalStorage private constructor() {
             Log.d(Sentry.TAG, "Adding request - " + request.uuid)
             if (!this.unsentRequests.contains(request)) {
                 this.unsentRequests.add(request)
-                this.writeObject(Sentry.instance.context, this.unsentRequests)
+                this.writeObject(Sentry.sharedClient.context, this.unsentRequests)
             }
         }
     }
@@ -43,7 +43,7 @@ internal class InternalStorage private constructor() {
         synchronized (this) {
             Log.d(Sentry.TAG, "Removing request - " + request.uuid)
             this.unsentRequests.remove(request)
-            this.writeObject(Sentry.instance.context, this.unsentRequests)
+            this.writeObject(Sentry.sharedClient.context, this.unsentRequests)
         }
     }
 

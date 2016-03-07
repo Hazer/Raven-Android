@@ -40,10 +40,12 @@ private constructor() {
 
     lateinit private var dsn: DSN
     lateinit private var packageName: String
-    private var verifySsl: Int = 0
-    private var release: String? = null
 
-    lateinit private var captureListener: DefaultSentryCaptureListener
+    private var verifySsl: Int = 0
+
+    internal var release: String? = null
+
+    internal var captureListener = DefaultSentryCaptureListener()
 
     private fun setupUncaughtExceptionHandler() {
 
@@ -53,7 +55,7 @@ private constructor() {
         }
 
         // don't register again if already registered
-        if (currentHandler !is Sentry.SentryUncaughtExceptionHandler) {
+        if (currentHandler !is SentryUncaughtExceptionHandler) {
             // Register default exceptions handler
             Thread.setDefaultUncaughtExceptionHandler(
                     SentryUncaughtExceptionHandler(currentHandler, context))
@@ -62,29 +64,7 @@ private constructor() {
         sendAllCachedCapturedEvents()
     }
 
-    private inner class SentryUncaughtExceptionHandler// constructor
-    (private val defaultExceptionHandler: UncaughtExceptionHandler, private val context: Context?) : UncaughtExceptionHandler {
-
-        override fun uncaughtException(thread: Thread, e: Throwable) {
-            // Here you should have a more robust, permanent record of problems
-            var builder: SentryEventBuilder = SentryEventBuilder(e, SentryEventLevel.FATAL)
-
-            builder.setRelease(instance.release)
-
-            builder = instance.captureListener.beforeCapture(builder)// ?: builder
-
-            //            if (builder != null) {
-            InternalStorage.instance.addRequest(SentryEventRequest(builder))
-            //            } else {
-            //                Log.e(Sentry.TAG, "SentryEventBuilder in uncaughtException is null")
-            //            }
-
-            //call original handler
-            defaultExceptionHandler.uncaughtException(thread, e)
-        }
-    }
-
-    abstract class SentryEventCaptureListener {
+    abstract class EventCaptureListener {
         abstract fun beforeCapture(builder: SentryEventBuilder): SentryEventBuilder
     }
 
@@ -92,10 +72,12 @@ private constructor() {
 
         internal val TAG = "Sentry"
 
-        internal val instance: Sentry by lazy { Sentry() }
+        internal val sharedClient: Sentry by lazy { Sentry() }
 
-        private fun init(captureListener: DefaultSentryCaptureListener = DefaultSentryCaptureListener()) {
-            instance.captureListener = captureListener
+        private fun init(captureListener: DefaultSentryCaptureListener? = null) {
+            if (captureListener != null) {
+                sharedClient.captureListener = captureListener
+            }
         }
 
         //    public static void init(Context context, String dsn, SentryEventCaptureListener captureListener) {
@@ -106,16 +88,24 @@ private constructor() {
         //        Sentry.init(context, DEFAULT_BASE_URL, dsn, null);
         //    }
 
-        @JvmOverloads fun init(context: Context, dsn: String, release: String? = null, captureListener: DefaultSentryCaptureListener = DefaultSentryCaptureListener()) {
+        @JvmOverloads fun init(context: Context, dsn: String, release: String? = null, captureListener: DefaultSentryCaptureListener? = null) {
             init(captureListener)
-            instance.context = context
-            instance.dsn = DSN(dsn)
-            instance.release = release
-            instance.packageName = context.packageName
-            instance.verifySsl = getVerifySsl(instance.dsn)
+            sharedClient.context = context
+            sharedClient.dsn = DSN(dsn)
+            sharedClient.release = release
+            sharedClient.packageName = context.packageName
+            sharedClient.verifySsl = getVerifySsl(sharedClient.dsn)
 
 
-            instance.setupUncaughtExceptionHandler()
+            sharedClient.setupUncaughtExceptionHandler()
+        }
+
+        fun addCaptureListener(tag: String, listener: EventCaptureListener) {
+            sharedClient.captureListener.addListener(tag, listener)
+        }
+
+        fun removeCaptureListener(tag: String) {
+            sharedClient.captureListener.removeListener(tag)
         }
 
         private fun getVerifySsl(dsn: DSN): Int {
@@ -143,7 +133,7 @@ private constructor() {
         private fun createXSentryAuthHeader(): String {
             var header = ""
 
-            val dsn = instance.dsn
+            val dsn = sharedClient.dsn
             Log.d("Sentry", "URI - " + dsn.hostURI)
 
             header += "Sentry sentry_version=4,"
@@ -156,7 +146,7 @@ private constructor() {
         }
 
         private val projectId: String
-            get() = instance.dsn.projectId
+            get() = sharedClient.dsn.projectId
 
         fun sendAllCachedCapturedEvents() {
             val unsentRequests = InternalStorage.instance.unsentRequests
@@ -169,13 +159,13 @@ private constructor() {
         /**
          * @param captureListener the captureListener to set
          */
-        fun setCaptureListener(captureListener: DefaultSentryCaptureListener) {
-            instance.captureListener = captureListener
-        }
+//        fun setCaptureListener(captureListener: DefaultSentryCaptureListener) {
+//            instance.captureListener = captureListener
+//        }
 
-        fun getCaptureListener(): DefaultSentryCaptureListener {
-            return instance.captureListener
-        }
+//        fun getCaptureListener(): DefaultSentryCaptureListener {
+//            return instance.captureListener
+//        }
 
         fun captureMessage(message: String) {
             captureMessage(message, SentryEventLevel.INFO)
@@ -227,15 +217,16 @@ private constructor() {
             Log.d(TAG, result.toString())
         }
 
-        internal fun getCause(t: Throwable, culprit: String): String {
+        internal fun getCause(t: Throwable?, culprit: String): String {
             var culpritL = culprit
-            for (stackTrace in t.stackTrace) {
-                if (stackTrace.toString().contains(instance.packageName)) {
-                    culpritL = stackTrace.toString()
-                    break
+            if (t != null) {
+                for (stackTrace in t.stackTrace) {
+                    if (stackTrace.toString().contains(sharedClient.packageName)) {
+                        culpritL = stackTrace.toString()
+                        break
+                    }
                 }
             }
-
             return culpritL
         }
 
@@ -252,12 +243,12 @@ private constructor() {
 
         fun captureEvent(builder: SentryEventBuilder) {
             var builder = builder
-            builder!!.setRelease(instance.release)
+            builder?.setRelease(sharedClient.release)
 
             val request: SentryEventRequest
 //            if (Sentry.instance.captureListener != null) {
 
-                builder = instance.captureListener.beforeCapture(builder)
+                builder = sharedClient.captureListener.beforeCapture(builder)
 //                if (builder == null) {
 //                    Log.e(Sentry.TAG, "SentryEventBuilder in captureEvent is null")
 //                    return
@@ -273,7 +264,7 @@ private constructor() {
             // Check if on main thread - if not, run on main thread
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 doCaptureEventPost(request)
-            } else if (instance.context != null) {
+            } else if (sharedClient.context != null) {
 
                 val thread = object : HandlerThread("SentryThread") {
 
@@ -288,13 +279,13 @@ private constructor() {
         }
 
         private fun shouldAttemptPost(): Boolean {
-            val pm = instance.context?.packageManager
-            val hasPerm = pm?.checkPermission(android.Manifest.permission.ACCESS_NETWORK_STATE, instance.context?.packageName)
+            val pm = sharedClient.context?.packageManager
+            val hasPerm = pm?.checkPermission(android.Manifest.permission.ACCESS_NETWORK_STATE, sharedClient.context?.packageName)
             if (hasPerm == PackageManager.PERMISSION_DENIED) {
                 return true
             }
 
-            val connectivityManager = instance.context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val connectivityManager = sharedClient.context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val activeNetworkInfo = connectivityManager.activeNetworkInfo
             return activeNetworkInfo != null && activeNetworkInfo.isConnected
         }
@@ -342,12 +333,14 @@ private constructor() {
                 override fun doInBackground(vararg params: Void): Void? {
 
                     val httpClient: HttpClient
-                    if (instance.verifySsl != 0) {
+
+                    if (sharedClient.dsn.verifySsl) {
                         httpClient = DefaultHttpClient()
                     } else {
                         httpClient = getHttpsClient(DefaultHttpClient()) ?: DefaultHttpClient()
                     }
-                    val httpPost = HttpPost(instance.dsn!!.hostURI.toString() + "api/" + projectId + "/store/")
+
+                    val httpPost = HttpPost(sharedClient.dsn.hostURI.toString() + "api/" + projectId + "/store/")
 
                     val TIMEOUT_MILLISEC = 10000  // = 20 seconds
                     val httpParams = httpPost.params

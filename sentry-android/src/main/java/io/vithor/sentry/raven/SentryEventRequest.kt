@@ -6,7 +6,7 @@ import java.io.Serializable
 import java.util.UUID
 
 /**
- * Created by Hazer on 2/25/16.
+ * Created by Vithorio Polten on 2/25/16.
  */
 internal class SentryEventRequest(builder: SentryEventBuilder) : Serializable {
     /**

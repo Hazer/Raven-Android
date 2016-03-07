@@ -9,11 +9,40 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Created by Hazer on 2/25/16.
+ * Created by Vithorio Polten on 2/25/16.
  */
 class SentryEventBuilder() : Serializable {
 
-    internal val event: MutableMap<String, Any>
+    internal val event = HashMap<String, Any?>()
+
+    val user: JSONObject
+        get() {
+            if (!event.containsKey("user")) {
+                setUser(HashMap<String, String?>())
+            }
+
+            return event["user"] as JSONObject
+        }
+
+    val tags: JSONObject
+        get() {
+            if (!event.containsKey("tags")) {
+                setTags(HashMap<String, String?>())
+            }
+
+            return event["tags"] as JSONObject
+        }
+
+
+    val extra: JSONObject
+        get() {
+            if (!event.containsKey("extra")) {
+                setExtra(HashMap<String, String?>())
+            }
+
+            return event["extra"] as JSONObject
+        }
+
 
     enum class SentryEventLevel private constructor(internal val value: String) {
         FATAL("fatal"),
@@ -21,19 +50,20 @@ class SentryEventBuilder() : Serializable {
         WARNING("warning"),
         INFO("info"),
         DEBUG("debug")
+
     }
 
     init {
-        event = HashMap<String, Any>()
         event.put("event_id", UUID.randomUUID().toString().replace("-", ""))
         this.setTimestamp(System.currentTimeMillis())
+        event.put("platform", "java")
     }
 
-    constructor(t: Throwable, level: SentryEventBuilder.SentryEventLevel) : this() {
+    constructor(t: Throwable?, level: SentryEventBuilder.SentryEventLevel) : this() {
 
-        val culprit = Sentry.getCause(t, t.message ?: t.cause?.message ?: "")
+        val culprit = Sentry.getCause(t, t?.message ?: t?.cause?.message ?: "")
 
-        this.setMessage(t.message ?: t.cause?.message ?: "")
+        this.setMessage(t?.message ?: t?.cause?.message ?: "")
                 .setCulprit(culprit)
                 .setLevel(level)
                 .setException(t)
@@ -68,7 +98,19 @@ class SentryEventBuilder() : Serializable {
     }
 
     /**
-     * "release": "some-code-sentry-needs"
+     * "platform": "java"
+
+     * @param platform Platform name String
+     * *
+     * @return SentryEventBuilder
+     */
+    fun setPlatform(platform: String): SentryEventBuilder {
+        event.put("platform", platform)
+        return this
+    }
+
+    /**
+     * "release": "your-app-version-code"
 
      * @param release Release String
      * *
@@ -120,7 +162,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setUser(user: Map<String, String>): SentryEventBuilder {
+    fun setUser(user: Map<String, String?>): SentryEventBuilder {
         setUser(JSONObject(user))
         return this
     }
@@ -130,21 +172,12 @@ class SentryEventBuilder() : Serializable {
         return this
     }
 
-    val user: JSONObject
-        get() {
-            if (!event.containsKey("user")) {
-                setTags(HashMap<String, String>())
-            }
-
-            return event["user"] as JSONObject
-        }
-
     /**
      * @param tags Tags
      * *
      * @return SentryEventBuilder
      */
-    fun setTags(tags: Map<String, String>): SentryEventBuilder {
+    fun setTags(tags: Map<String, String?>): SentryEventBuilder {
         setTags(JSONObject(tags))
         return this
     }
@@ -153,15 +186,6 @@ class SentryEventBuilder() : Serializable {
         event.put("tags", tags)
         return this
     }
-
-    val tags: JSONObject
-        get() {
-            if (!event.containsKey("tags")) {
-                setTags(HashMap<String, String>())
-            }
-
-            return event["tags"] as JSONObject
-        }
 
     /**
      * @param serverName Server name
@@ -202,7 +226,7 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setExtra(extra: Map<String, String>): SentryEventBuilder {
+    fun setExtra(extra: Map<String, String?>): SentryEventBuilder {
         setExtra(JSONObject(extra))
         return this
     }
@@ -211,15 +235,6 @@ class SentryEventBuilder() : Serializable {
         event.put("extra", extra)
         return this
     }
-
-    val extra: JSONObject
-        get() {
-            if (!event.containsKey("extra")) {
-                setExtra(HashMap<String, String>())
-            }
-
-            return event["extra"] as JSONObject
-        }
 
     /**
      * @param t Throwable
@@ -281,9 +296,9 @@ class SentryEventBuilder() : Serializable {
                     frame.put("function", method)
                 }
 
-                val lineno = ste.lineNumber
-                if (!ste.isNativeMethod && lineno >= 0) {
-                    frame.put("lineno", lineno)
+                val lineNo = ste.lineNumber
+                if (!ste.isNativeMethod && lineNo >= 0) {
+                    frame.put("lineno", lineNo)
                 }
 
                 var inApp = true

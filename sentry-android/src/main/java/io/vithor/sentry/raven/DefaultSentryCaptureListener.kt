@@ -2,34 +2,40 @@ package io.vithor.sentry.raven
 
 import android.support.annotation.CallSuper
 import android.util.Log
-
-import java.util.ArrayList
+import org.jetbrains.anko.AnkoLogger
+import org.jetbrains.anko.error
+import java.util.*
 
 /**
- * Created by Hazer on 2/25/16.
+ * Created by Vithorio Polten on 2/25/16.
  */
-open class DefaultSentryCaptureListener(val limit: Int = 5) : Sentry.SentryEventCaptureListener() {
+open class DefaultSentryCaptureListener(val limit: Int = 5) : Sentry.EventCaptureListener(), AnkoLogger {
 
-    private val listeners = ArrayList<Sentry.SentryEventCaptureListener>()
+    private val listeners = HashMap<String, Sentry.EventCaptureListener>()
 
     @CallSuper
     override fun beforeCapture(builder: SentryEventBuilder): SentryEventBuilder {
-        for (listener in listeners) {
-            listener.beforeCapture(builder)
+        try {
+            for (listener in listeners.values) {
+                listener.beforeCapture(builder)
+            }
+        } catch(e: Exception) {
+            error(message = "Failed applying capture listeners", thr=e)
         }
         return builder
     }
 
-    fun addListener(listener: Sentry.SentryEventCaptureListener) {
-        if (!listeners.contains(listener) && listeners.size < limit) {
-            listeners.add(listener)
+    fun addListener(tag: String, eventListener: Sentry.EventCaptureListener) {
+        if (!listeners.contains(tag) && listeners.size < limit) {
+            listeners.put(tag, eventListener)
         } else {
+            error { "Too much sentry listeners." }
             Log.e(javaClass.name, "Too much sentry listeners.")
         }
     }
 
-    fun removeListener(listener: Sentry.SentryEventCaptureListener) {
-        listeners.remove(listener)
+    fun removeListener(tag: String) {
+        listeners.remove(tag)
     }
 
     fun clearListeners() {

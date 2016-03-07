@@ -1,10 +1,12 @@
 package io.vithor.sentry.raven
 
+import java.io.UnsupportedEncodingException
 import java.net.URI
 import java.net.URISyntaxException
+import java.net.URLDecoder
 
 /**
- * Created by Hazer on 2/25/16.
+ * Created by Vithorio Polten on 2/25/16.
  */
 internal class DSN(dsnString: String?) {
     //    private static final String DEFAULT_BASE_URL = "https://app.getsentry.com";
@@ -27,6 +29,13 @@ internal class DSN(dsnString: String?) {
     lateinit var secretKey: String
         private set
 
+    lateinit var options: MutableMap<String, String?>
+        private set
+
+    val verifySsl: Boolean
+        get() {
+            return try { options["verify_ssl"]?.toInt() == 1 } catch (e: NumberFormatException) { true }
+        }
 
     init {
         if (dsnString == null)
@@ -49,6 +58,8 @@ internal class DSN(dsnString: String?) {
         //        extractOptions(dsn);
 
         hostURI = makeHostURI(dsn)
+
+        options = extractOptions(dsn)
     }
 
     private fun makeHostURI(dsn: URI): URI {
@@ -120,27 +131,31 @@ internal class DSN(dsnString: String?) {
             throwMissingElements("secret key")
         }
     }
-    //
-    //    /**
-    //     * Extracts the DSN options from the DSN provided as an {@code URI}.
-    //     *
-    //     * @param dsnUri DSN as an URI.
-    //     */
-    //    private void extractOptions(URI dsnUri) {
-    //        String query = dsnUri.getQuery();
-    //        if (query == null || query.isEmpty())
-    //            return;
-    //        for (String optionPair : query.split("&")) {
-    //            try {
-    //                String[] pairDetails = optionPair.split("=");
-    //                String key = URLDecoder.decode(pairDetails[0], "UTF-8");
-    //                String value = pairDetails.length > 1 ? URLDecoder.decode(pairDetails[1], "UTF-8") : null;
-    //                options.put(key, value);
-    //            } catch (UnsupportedEncodingException e) {
-    //                throw new IllegalArgumentException("Impossible to decode the query parameter '" + optionPair + "'", e);
-    //            }
-    //        }
-    //    }
+
+    /**
+     * Extracts the DSN options from the DSN provided as an {@code URI}.
+     *
+     * @param dsnUri DSN as an URI.
+     */
+    private fun extractOptions(dsnUri: URI): MutableMap<String, String?> {
+        val query = dsnUri.query
+        if (query == null || query.isEmpty())
+            return mutableMapOf()
+
+        val foundOptions = mutableMapOf<String, String?>()
+
+        for (optionPair in query.split("&")) {
+            try {
+                val pairDetails = optionPair.split("=")
+                val key = URLDecoder.decode(pairDetails[0], "UTF-8")
+                val value = if (pairDetails.size > 1) URLDecoder.decode(pairDetails[1], "UTF-8") else null
+                foundOptions.put(key, value);
+            } catch (e: UnsupportedEncodingException) {
+                throw IllegalArgumentException("Impossible to decode the query parameter '$optionPair'", e)
+            }
+        }
+        return foundOptions
+    }
 
 
     private fun throwMissingElements(vararg elements: String) {
