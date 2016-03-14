@@ -39,9 +39,19 @@ class AndroidInfo(val osSDKVersion: Int = Build.VERSION.SDK_INT, val oSVersion: 
 
     private var filesDir: String? = null
 
+    @Suppress("NewApi", "Deprecated", "DEPRECATION")
+    fun findABIS(): String {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            return Build.SUPPORTED_ABIS.joinToString(separator = ", ")
+        } else {
+            return "ABI: [${Build.CPU_ABI}]\nABI2: [${Build.CPU_ABI2}]"
+        }
+    }
+
     constructor(context: Context?, withMemory: Boolean = false, withStorage: Boolean = false) : this() {
         try {
-            architecture = Build.SUPPORTED_ABIS.joinToString(separator = ", ")
+            architecture = findABIS()
+
             processorCount = Runtime.getRuntime().availableProcessors()
 
             context?.resources?.apply {
