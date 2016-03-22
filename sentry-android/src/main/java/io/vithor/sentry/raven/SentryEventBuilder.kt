@@ -15,31 +15,31 @@ class SentryEventBuilder() : Serializable {
 
     internal val event = HashMap<String, Any?>()
 
-    val user: HashMap<String, String?>
+    val user: HashMap<String, Any?>
         get() {
             if (!event.containsKey("user")) {
-                setUser(HashMap<String, String?>())
+                setUser(HashMap<String, Any?>())
             }
 
-            return event["user"] as HashMap<String, String?>
+            return event["user"] as HashMap<String, Any?>
         }
 
-    val tags: HashMap<String, String?>
+    val tags: HashMap<String, Any?>
         get() {
             if (!event.containsKey("tags")) {
-                setTags(HashMap<String, String?>())
+                setTags(HashMap<String, Any?>())
             }
 
-            return event["tags"] as HashMap<String, String?>
+            return event["tags"] as HashMap<String, Any?>
         }
 
-    val extra: HashMap<String, String?>
+    val extra: HashMap<String, Any?>
         get() {
             if (!event.containsKey("extra")) {
-                setExtra(HashMap<String, String?>())
+                setExtra(HashMap<String, Any?>())
             }
 
-            return event["extra"] as HashMap<String, String?>
+            return event["extra"] as HashMap<String, Any?>
         }
 
     enum class SentryEventLevel private constructor(internal val value: String) {
@@ -159,13 +159,13 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setUser(user: Map<String, String?>): SentryEventBuilder {
+    fun setUser(user: Map<String, Any?>): SentryEventBuilder {
         event.put("user", user)
         return this
     }
 
-    fun putUserInfo(key: String, value: String?): SentryEventBuilder {
-        user.put(key, value)
+    fun putUserInfo(key: String, value: Any?): SentryEventBuilder {
+        user.put(key, JSONObject.wrap(value))
         return this
     }
 
@@ -174,13 +174,13 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setTags(tags: Map<String, String?>): SentryEventBuilder {
+    fun setTags(tags: Map<String, Any?>): SentryEventBuilder {
         event.put("tags", tags)
         return this
     }
 
-    fun putTag(key: String, value: String?): SentryEventBuilder {
-        tags.put(key, value)
+    fun putTag(key: String, value: Any?): SentryEventBuilder {
+        tags.put(key, JSONObject.wrap(value))
         return this
     }
 
@@ -223,13 +223,13 @@ class SentryEventBuilder() : Serializable {
      * *
      * @return SentryEventBuilder
      */
-    fun setExtra(extra: Map<String, String?>): SentryEventBuilder {
+    fun setExtra(extra: Map<String, Any?>): SentryEventBuilder {
         event.put("extra", extra)
         return this
     }
 
-    fun putExtra(key: String, value: String?): SentryEventBuilder {
-        extra.put(key, value)
+    fun putExtra(key: String, value: Any?): SentryEventBuilder {
+        extra.put(key, JSONObject.wrap(value))
         return this
     }
 

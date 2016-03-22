@@ -25,12 +25,8 @@ public class App extends Application {
             @Override
             public SentryEventBuilder beforeCapture(@NonNull SentryEventBuilder builder) {
                 Log.d("Test", "Sentry event listener");
-                try {
-                    builder.getExtra().put("test", "Sending test");
-                    builder.getTags().put("test", true);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                builder.getExtra().put("test", "Sending test");
+                builder.getTags().put("test", true);
                 return super.beforeCapture(builder);
             }
         });
