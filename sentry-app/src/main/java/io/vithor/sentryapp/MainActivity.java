@@ -28,12 +28,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public SentryEventBuilder beforeCapture(@NonNull SentryEventBuilder builder) {
                 Log.d("Test", "Sentry event listener");
-                try {
-                    builder.getExtra().put("test", "Sending test");
-                    builder.getTags().put("test", true);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                    builder.putExtra("test", "Sending test");
+                    builder.putTag("test", true);
                 return super.beforeCapture(builder);
             }
         });

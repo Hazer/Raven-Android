@@ -68,10 +68,10 @@ internal class InternalStorage private constructor() {
         try {
             val fis = context?.openFileInput(InternalStorage.FILE_NAME)
             val ois = ObjectInputStream(fis)
-            val requests = ois.readObject() as ArrayList<SentryEventRequest>
+            val requests = ois.readObject() as? ArrayList<SentryEventRequest>
             ois.close()
             fis?.close()
-            return requests
+            return requests ?: ArrayList()
         } catch (e: FileNotFoundException) {
             e.printStackTrace()
         } catch (e: StreamCorruptedException) {
