@@ -2,15 +2,8 @@ package io.vithor.sentry.raven
 
 import android.content.Context
 import android.util.Log
-
-import java.io.FileInputStream
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
-import java.io.StreamCorruptedException
-import java.util.ArrayList
+import java.io.*
+import java.util.*
 
 /**
  * Created by Vithorio Polten on 2/25/16.
@@ -26,7 +19,16 @@ internal class InternalStorage private constructor() {
     //    }
 
     init {
-        this.unsentRequests = this.readObject(Sentry.sharedClient.context)
+        val context = Sentry.sharedClient.context
+        try {
+            val unsetRequestsFile = File(context?.filesDir, FILE_NAME)
+            if (!unsetRequestsFile.exists()) {
+                writeObject(context, ArrayList<SentryEventRequest>())
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        this.unsentRequests = this.readObject(context)
     }
 
     fun addRequest(request: SentryEventRequest) {
@@ -67,6 +69,8 @@ internal class InternalStorage private constructor() {
             val fis = context?.openFileInput(InternalStorage.FILE_NAME)
             val ois = ObjectInputStream(fis)
             val requests = ois.readObject() as ArrayList<SentryEventRequest>
+            ois.close()
+            fis?.close()
             return requests
         } catch (e: FileNotFoundException) {
             e.printStackTrace()
