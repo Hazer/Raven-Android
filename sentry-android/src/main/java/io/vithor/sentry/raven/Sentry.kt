@@ -391,10 +391,14 @@ private constructor() {
                         e.printStackTrace()
                     }
 
-                    if (success) {
-                        InternalStorage.instance.removeBuilder(request)
-                    } else {
-                        InternalStorage.instance.addRequest(request)
+                    try {
+                        if (success) {
+                            InternalStorage.instance.removeBuilder(request)
+                        } else {
+                            InternalStorage.instance.addRequest(request)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
 
                     return null
