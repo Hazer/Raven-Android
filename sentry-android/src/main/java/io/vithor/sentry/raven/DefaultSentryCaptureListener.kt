@@ -2,14 +2,12 @@ package io.vithor.sentry.raven
 
 import android.support.annotation.CallSuper
 import android.util.Log
-import org.jetbrains.anko.AnkoLogger
-import org.jetbrains.anko.error
 import java.util.*
 
 /**
  * Created by Vithorio Polten on 2/25/16.
  */
-open class DefaultSentryCaptureListener(val limit: Int = 5) : Sentry.EventCaptureListener(), AnkoLogger {
+open class DefaultSentryCaptureListener(val limit: Int = 5) : Sentry.EventCaptureListener() {
 
     private val listeners = HashMap<String, Sentry.EventCaptureListener>()
 
@@ -20,7 +18,7 @@ open class DefaultSentryCaptureListener(val limit: Int = 5) : Sentry.EventCaptur
                 listener.beforeCapture(builder)
             }
         } catch(e: Exception) {
-            error(message = "Failed applying capture listeners", thr=e)
+            Log.e(javaClass.simpleName, "Failed applying capture listeners", e)
         }
         return builder
     }
@@ -29,8 +27,7 @@ open class DefaultSentryCaptureListener(val limit: Int = 5) : Sentry.EventCaptur
         if (!listeners.contains(tag) && listeners.size < limit) {
             listeners.put(tag, eventListener)
         } else {
-            error { "Too much sentry listeners." }
-            Log.e(javaClass.name, "Too much sentry listeners.")
+            Log.e(javaClass.simpleName, "Too much sentry listeners.")
         }
     }
 
