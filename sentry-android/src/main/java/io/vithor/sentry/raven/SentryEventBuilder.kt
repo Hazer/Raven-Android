@@ -315,6 +315,10 @@ class SentryEventBuilder() : Serializable {
                 frame.put("in_app", inApp)
 
                 frameList.put(frame)
+
+                if (frameList.length() > 250) {
+                    break
+                }
             }
 
             val frameHash = JSONObject()
