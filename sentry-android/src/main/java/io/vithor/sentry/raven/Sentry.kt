@@ -3,34 +3,15 @@ package io.vithor.sentry.raven
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
-import android.os.AsyncTask
+import android.net.Uri
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
+import com.github.kittinunf.fuel.httpPost
+import com.github.kittinunf.result.Result
 import io.vithor.sentry.raven.SentryEventBuilder.SentryEventLevel
-import org.apache.http.NameValuePair
-import org.apache.http.client.ClientProtocolException
-import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.HttpPost
-import org.apache.http.client.utils.URLEncodedUtils
-import org.apache.http.conn.scheme.Scheme
-import org.apache.http.conn.ssl.SSLSocketFactory
-import org.apache.http.entity.StringEntity
-import org.apache.http.impl.client.DefaultHttpClient
-import org.apache.http.params.HttpConnectionParams
 import java.io.*
-import java.lang.Thread.UncaughtExceptionHandler
-import java.net.URISyntaxException
-import java.nio.ByteBuffer
-import java.nio.CharBuffer
-import java.nio.charset.CharacterCodingException
-import java.nio.charset.Charset
-import java.security.cert.CertificateException
-import java.security.cert.X509Certificate
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
 
 class Sentry //    private static final String DEFAULT_BASE_URL = "https://app.getsentry.com";
 
@@ -41,7 +22,7 @@ private constructor() {
     lateinit private var dsn: DSN
     lateinit private var packageName: String
 
-    private var verifySsl: Int = 0
+    private var verifySsl: Boolean = true
 
     internal var release: String? = null
 
@@ -108,25 +89,30 @@ private constructor() {
             sharedClient.captureListener.removeListener(tag)
         }
 
-        private fun getVerifySsl(dsn: DSN): Int {
-            val verifySsl = 1
-            val params = getAllGetParams(dsn)
-            if (params != null) {
-                for (param in params) {
-                    if (param.name == "verify_ssl")
-                        return Integer.parseInt(param.value)
-                }
+        private fun getVerifySsl(dsn: DSN): Boolean {
+            val paramValue = Uri.parse(dsn.hostURI.toASCIIString()).getQueryParameter("verify_ssl")
+            if (paramValue != null) {
+                return Integer.parseInt(paramValue) == 1
             }
-            return verifySsl
+            return true
         }
 
-        private fun getAllGetParams(dsn: DSN): List<NameValuePair>? {
-            var params: List<NameValuePair>? = null
-            try {
-                params = URLEncodedUtils.parse(dsn.hostURI, "UTF-8")
-            } catch (e: URISyntaxException) {
-                e.printStackTrace()
+        private fun getAllGetParams(dsn: DSN): List<Pair<String, Any?>>? {
+            val uri = Uri.parse(dsn.hostURI.toASCIIString())
+            val paramNames = uri.queryParameterNames
+
+            val params = mutableListOf<Pair<String, String?>>()
+            for (name in paramNames) {
+                params.add(
+                        name to uri.getQueryParameter(name)
+                )
             }
+            //                        var params: List<NameValuePair>? = null
+            //            try {
+            //                params = URLEncodedUtils.parse(dsn.hostURI, "UTF-8")
+            //            } catch (e: URISyntaxException) {
+            //                e.printStackTrace()
+            //            }
             return params
         }
 
@@ -159,13 +145,13 @@ private constructor() {
         /**
          * @param captureListener the captureListener to set
          */
-//        fun setCaptureListener(captureListener: DefaultSentryCaptureListener) {
-//            instance.captureListener = captureListener
-//        }
+        //        fun setCaptureListener(captureListener: DefaultSentryCaptureListener) {
+        //            instance.captureListener = captureListener
+        //        }
 
-//        fun getCaptureListener(): DefaultSentryCaptureListener {
-//            return instance.captureListener
-//        }
+        //        fun getCaptureListener(): DefaultSentryCaptureListener {
+        //            return instance.captureListener
+        //        }
 
         fun captureMessage(message: String) {
             captureMessage(message, SentryEventLevel.INFO)
@@ -243,37 +229,42 @@ private constructor() {
 
         fun captureEvent(builder: SentryEventBuilder) {
             var builder = builder
-            builder?.setRelease(sharedClient.release)
+            builder.setRelease(sharedClient.release)
 
-            val request: SentryEventRequest
-//            if (Sentry.instance.captureListener != null) {
 
+            //            if (Sentry.instance.captureListener != null) {
+
+            try {
                 builder = sharedClient.captureListener.beforeCapture(builder)
-//                if (builder == null) {
-//                    Log.e(Sentry.TAG, "SentryEventBuilder in captureEvent is null")
-//                    return
-//                }
 
-                request = SentryEventRequest(builder)
-//            } else {
-//                request = SentryEventRequest(builder)
-//            }
+                //                if (builder == null) {
+                //                    Log.e(Sentry.TAG, "SentryEventBuilder in captureEvent is null")
+                //                    return
+                //                }
 
-            Log.d(TAG, "Request - " + request.requestData)
+                val request = SentryEventRequest(builder)
+                //            } else {
+                //                request = SentryEventRequest(builder)
+                //            }
 
-            // Check if on main thread - if not, run on main thread
-            if (Looper.myLooper() == Looper.getMainLooper()) {
-                doCaptureEventPost(request)
-            } else if (sharedClient.context != null) {
+                Log.d(TAG, "Request - ${request.requestData}")
 
-                val thread = object : HandlerThread("SentryThread") {
+                // Check if on main thread - if not, run on main thread
+                if (Looper.myLooper() == Looper.getMainLooper()) {
+                    doCaptureEventPost(request)
+                } else if (sharedClient.context != null) {
+
+                    val thread = object : HandlerThread("SentryThread") {
+
+                    }
+                    thread.start()
+                    val runnable = Runnable { doCaptureEventPost(request) }
+                    val h = Handler(thread.looper)
+                    h.post(runnable)
 
                 }
-                thread.start()
-                val runnable = Runnable { doCaptureEventPost(request) }
-                val h = Handler(thread.looper)
-                h.post(runnable)
-
+            } catch (e: Exception) {
+                Log.e("Sentry", "Exception during Sentry capture.", e)
             }
 
         }
@@ -290,151 +281,51 @@ private constructor() {
             return activeNetworkInfo != null && activeNetworkInfo.isConnected
         }
 
-        fun getHttpsClient(client: HttpClient): HttpClient? {
-            try {
-                val x509TrustManager = object : X509TrustManager {
-                    @Throws(CertificateException::class)
-                    override fun checkClientTrusted(chain: Array<X509Certificate>,
-                                                    authType: String) {
-                    }
-
-                    @Throws(CertificateException::class)
-                    override fun checkServerTrusted(chain: Array<X509Certificate>,
-                                                    authType: String) {
-                    }
-
-                    override fun getAcceptedIssuers(): Array<X509Certificate>? {
-                        return null
-                    }
-                }
-
-                val sslContext = SSLContext.getInstance("TLS")
-                sslContext.init(null, arrayOf<TrustManager>(x509TrustManager), null)
-                val sslSocketFactory = ExSSLSocketFactory(sslContext)
-                sslSocketFactory.hostnameVerifier = SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER
-                val clientConnectionManager = client.connectionManager
-                val schemeRegistry = clientConnectionManager?.schemeRegistry
-                schemeRegistry?.register(Scheme("https", sslSocketFactory, 443))
-                return DefaultHttpClient(clientConnectionManager, client.params)
-            } catch (ex: Exception) {
-                return null
-            }
-
-        }
-
-        private fun doCaptureEventPost(request: SentryEventRequest) {
+        private fun doCaptureEventPost(sentryRequest: SentryEventRequest) {
 
             if (!shouldAttemptPost()) {
-                InternalStorage.instance.addRequest(request)
+                InternalStorage.instance.addRequest(sentryRequest)
                 return
             }
 
-            object : AsyncTask<Void, Void, Void>() {
-                override fun doInBackground(vararg params: Void): Void? {
+            val url = "${ sharedClient.dsn.hostURI }api/${ projectId }/store/"
+            val postClient = url.httpPost()
+                    .header(
+                            "X-Sentry-Auth" to createXSentryAuthHeader(),
+                            "User-Agent" to sentryClientInfo,
+                            "Content-Type" to "text/html; charset=utf-8"
+                    )
+                    .body(sentryRequest.requestData ?: "", charset("UTF-8"))
+                    .timeout(10000)
 
-                    val httpClient: HttpClient
+            if (sharedClient.verifySsl) {
 
-                    if (sharedClient.dsn.verifySsl) {
-                        httpClient = DefaultHttpClient()
-                    } else {
-                        httpClient = getHttpsClient(DefaultHttpClient()) ?: DefaultHttpClient()
+            }
+
+            postClient.interrupt { request ->
+                println("${request.cUrlString()} was interrupted and cancelled")
+            }.responseString { request, response, result ->
+
+                Log.d("Sentry cUrl", request.cUrlString())
+
+                when (result) {
+                    is Result.Success -> {
+                        Log.d(TAG, "SendEvent - ${response.httpStatusCode} ${result.value}")
+                        InternalStorage.instance.removeBuilder(sentryRequest)
                     }
-
-                    val httpPost = HttpPost(sharedClient.dsn.hostURI.toString() + "api/" + projectId + "/store/")
-
-                    val TIMEOUT_MILLISEC = 10000  // = 20 seconds
-                    val httpParams = httpPost.params
-                    HttpConnectionParams.setConnectionTimeout(httpParams, TIMEOUT_MILLISEC)
-                    HttpConnectionParams.setSoTimeout(httpParams, TIMEOUT_MILLISEC)
-
-                    var success = false
-                    try {
-                        createBaseAuthHeaders(httpPost)
-
-                        httpPost.entity = StringEntity(request.requestData, "utf-8")
-                        val httpResponse = httpClient.execute(httpPost)
-
-                        val status = httpResponse.statusLine.statusCode
-                        var byteResp: ByteArray? = null
-
-                        // Gets the input stream and unpackages the response into a command
-                        if (httpResponse.entity != null) {
-                            try {
-                                val `in` = httpResponse.entity.content
-                                byteResp = this.readBytes(`in`)
-
-                            } catch (e: IOException) {
-                                e.printStackTrace()
-                            }
-
-                        }
-
-                        var stringResponse: String? = null
-                        val charsetInput = Charset.forName("UTF-8")
-                        val decoder = charsetInput.newDecoder()
-                        var cbuf: CharBuffer?
-                        try {
-                            cbuf = decoder.decode(ByteBuffer.wrap(byteResp))
-                            stringResponse = cbuf!!.toString()
-                        } catch (e: CharacterCodingException) {
-                            e.printStackTrace()
-                        }
-
-                        success = status == 200
-
-                        Log.d(TAG, "SendEvent - $status $stringResponse")
-                    } catch (e: ClientProtocolException) {
-                        e.printStackTrace()
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    is Result.Failure -> {
+                        Log.d(TAG, "SendEvent - ${response.httpStatusCode} ${result.error.message}", result.error.cause)
+                        InternalStorage.instance.addRequest(sentryRequest)
                     }
-
-                    try {
-                        if (success) {
-                            InternalStorage.instance.removeBuilder(request)
-                        } else {
-                            InternalStorage.instance.addRequest(request)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-
-                    return null
                 }
-
-                @Throws(IOException::class)
-                private fun readBytes(inputStream: InputStream): ByteArray {
-                    // this dynamically extends to take the bytes you read
-                    val byteBuffer = ByteArrayOutputStream()
-
-                    // this is storage overwritten on each iteration with bytes
-                    val bufferSize = 1024
-                    val buffer = ByteArray(bufferSize)
-
-                    // we need to know how may bytes were read to write them to the byteBuffer
-
-                    while (true) {
-                        val length = inputStream.read(buffer)
-                        if (length == -1)
-                            break
-                        byteBuffer.write(buffer, 0, length)
-                    }
-
-                    // and then we can return your byte array.
-                    return byteBuffer.toByteArray()
-                }
-
-            }.execute()
-
+            }
         }
-
-        private fun createBaseAuthHeaders(httpPost: HttpPost) {
-            httpPost.setHeader("X-Sentry-Auth", createXSentryAuthHeader())
-            httpPost.setHeader("User-Agent", sentryClientInfo)
-            httpPost.setHeader("Content-Type", "text/html; charset=utf-8")
-        }
+//
+//        private fun createBaseAuthHeaders(httpPost: HttpPost) {
+//            httpPost.setHeader("X-Sentry-Auth", createXSentryAuthHeader())
+//            httpPost.setHeader("User-Agent", sentryClientInfo)
+//            httpPost.setHeader("Content-Type", "text/html; charset=utf-8")
+//        }
 
         private val sentryClientInfo: String
             get() = "sentry-raven-android/" + BuildConfig.LIBRARY_VERSION

@@ -1,9 +1,7 @@
 package io.vithor.sentry.raven
 
-import org.json.JSONObject
-
 import java.io.Serializable
-import java.util.UUID
+import java.util.*
 
 /**
  * Created by Vithorio Polten on 2/25/16.
@@ -12,7 +10,7 @@ internal class SentryEventRequest(builder: SentryEventBuilder) : Serializable {
     /**
      * @return the requestData
      */
-    val requestData: String
+    val requestData: String?
 
     /**
      * @return the uuid
@@ -20,7 +18,7 @@ internal class SentryEventRequest(builder: SentryEventBuilder) : Serializable {
     val uuid: UUID
 
     init {
-        this.requestData = JSONObject(builder.event).toString()
+        this.requestData = builder.build()
         this.uuid = UUID.randomUUID()
     }
 
@@ -30,7 +28,7 @@ internal class SentryEventRequest(builder: SentryEventBuilder) : Serializable {
     }
 
     override fun hashCode(): Int{
-        var result = requestData.hashCode()
+        var result = requestData?.hashCode() ?: 0
         result += 31 * result + uuid.hashCode()
         return result
     }
