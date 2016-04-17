@@ -153,18 +153,52 @@ class SentryEventBuilder() : Serializable {
         return this
     }
 
-    fun putUserInfo(key: String, value: Any?): SentryEventBuilder {
-        user?.addProperty(key, gson.toJsonOrNull(value))
-        return this
-    }
+//    fun putUserInfo(key: String, value: Any?): SentryEventBuilder {
+//        user?.addProperty(key, gson.toJsonOrNull(value))
+//        return this
+//    }
 
     fun putUserInfo(key: String, value: String?): SentryEventBuilder {
         user?.addProperty(key, value)
         return this
     }
 
+    fun putUserInfo(key: String, value: Number?): SentryEventBuilder {
+        user?.addProperty(key, value)
+        return this
+    }
+
+    fun putUserInfo(key: String, value: Boolean?): SentryEventBuilder {
+        user?.addProperty(key, value)
+        return this
+    }
+
+    fun putUserInfo(mapOf: Map<String, String?>): SentryEventBuilder {
+        for ((key, value) in mapOf) {
+            user?.addProperty(key, value)
+        }
+        return this
+    }
+
     fun putTag(key: String, value: String?): SentryEventBuilder {
         tags?.addProperty(key, value)
+        return this
+    }
+
+    fun putTag(key: String, value: Boolean?): SentryEventBuilder {
+        tags?.addProperty(key, value)
+        return this
+    }
+
+    fun putTag(key: String, value: Number?): SentryEventBuilder {
+        tags?.addProperty(key, value)
+        return this
+    }
+
+    fun putTags(mapOf: Map<String, String?>): SentryEventBuilder {
+        for ((key, value) in mapOf) {
+            tags?.addProperty(key, value)
+        }
         return this
     }
 
@@ -204,6 +238,23 @@ class SentryEventBuilder() : Serializable {
 
     fun putExtra(key: String, value: String?): SentryEventBuilder {
         extra?.addProperty(key, value)
+        return this
+    }
+
+    fun putExtra(key: String, value: Number?): SentryEventBuilder {
+        extra?.addProperty(key, value)
+        return this
+    }
+
+    fun putExtra(key: String, value: Boolean?): SentryEventBuilder {
+        extra?.addProperty(key, value)
+        return this
+    }
+
+    fun putExtras(mapOf: Map<String, String?>): SentryEventBuilder {
+        for ((key, value) in mapOf) {
+            extra?.addProperty(key, value)
+        }
         return this
     }
 
