@@ -29,7 +29,7 @@ object AndroidInfo {
 
         val architecture: String by lazy { findABIS() }
 
-        public val map by lazy { createMap() }
+        val map by lazy { createMap() }
 
         @Suppress("NewApi", "Deprecated", "DEPRECATION")
         private fun findABIS(): String {
@@ -40,9 +40,9 @@ object AndroidInfo {
             }
         }
 
-        private fun createMap(): Map<String, Any?> {
+        private fun createMap(): Map<String, String?> {
             return mapOf(
-                    "sdk version" to osSDKVersion,
+                    "sdk version" to "${osSDKVersion}",
                     "os version" to oSVersion,
                     "device code" to deviceCode,
                     "device name" to deviceName,
@@ -145,17 +145,17 @@ object AndroidInfo {
             return load
         }
 
-        private fun createMap(): Map<String, Any?> {
+        private fun createMap(): Map<String, String?> {
             return mapOf(
                     "orientation" to currentOrientation,
                     "locale" to locale,
                     "filesDir" to filesDir,
-                    "utc offset" to utcOffset,
-                    "windowsBoundWidth" to windowsBoundWidth,
-                    "windowsBoundHeight" to windowsBoundHeight,
-                    "processor count" to processorCount,
-                    "available physical memory" to availablePhysicalMemory,
-                    "total physical memory" to totalPhysicalMemory
+                    "utc offset" to "${utcOffset}",
+                    "windowsBoundWidth" to "${windowsBoundWidth}",
+                    "windowsBoundHeight" to "${windowsBoundHeight}",
+                    "processor count" to "${processorCount}",
+                    "available physical memory" to "${availablePhysicalMemory}",
+                    "total physical memory" to "${totalPhysicalMemory}"
             )
         }
     }
