@@ -318,7 +318,7 @@ class SentryEventBuilder() : Serializable {
         fun getStackTrace(t: Throwable): JsonObject {
             val frameList = JsonArray()
 
-            for (traceElement in t.stackTrace) {
+            for (traceElement in t.stackTrace.reversedArray()) {
                 val frame = JsonObject()
 
                 val method = traceElement.methodName

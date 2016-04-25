@@ -10,7 +10,7 @@ project.ext.libraryVersion = "${versionMajor}.${versionMinor}.${versionPatch}"
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    buildToolsVersion "23.0.3"
 
 //    useLibrary 'org.apache.http.legacy'
 

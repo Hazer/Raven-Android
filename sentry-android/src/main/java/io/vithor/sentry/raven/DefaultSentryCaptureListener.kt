@@ -24,7 +24,7 @@ open class DefaultSentryCaptureListener(val limit: Int = 5) : Sentry.EventCaptur
     }
 
     fun addListener(tag: String, eventListener: Sentry.EventCaptureListener) {
-        if (!listeners.contains(tag) && listeners.size < limit) {
+        if (listeners.size < limit) {
             listeners.put(tag, eventListener)
         } else {
             Log.e(javaClass.simpleName, "Too much sentry listeners.")
