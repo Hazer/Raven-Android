@@ -8,7 +8,6 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
-import com.github.kittinunf.fuel.core.Manager
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.result.Result
 import io.vithor.sentry.raven.SentryEventBuilder.SentryEventLevel
