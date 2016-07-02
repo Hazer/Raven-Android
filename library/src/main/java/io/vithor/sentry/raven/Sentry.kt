@@ -61,7 +61,7 @@ class Sentry private constructor(
                 .header(
                         "X-Sentry-Auth" to createXSentryAuthHeader(),
                         "User-Agent" to sentryClientInfo,
-                        "Content-Type" to "text/html; charset=utf-8"
+                        "Content-Type" to "application/json; charset=utf-8"
                 )
                 .body(sentryRequest.requestData ?: "", charset("UTF-8"))
                 .timeout(10000)
@@ -136,7 +136,7 @@ class Sentry private constructor(
     private fun createXSentryAuthHeader(): String {
         Log.d("Sentry", "URI - " + dsn.hostURI)
 
-        return """Sentry sentry_version=4,
+        return """Sentry sentry_version=$sentryVersion,
         sentry_client=$sentryClientInfo,
         sentry_timestamp=${System.currentTimeMillis()},
         sentry_key=${dsn.publicKey},
@@ -155,6 +155,8 @@ class Sentry private constructor(
         internal var release: String? = null
 
         private val sentryClientInfo: String by lazy { "kotlin-raven-android/" + BuildConfig.LIBRARY_VERSION }
+
+        private val sentryVersion: Int = 8
 
         fun init(context: Context, dsn: String, mainCaptureListener: EventCaptureListener) {
             init(context = context, dsn = dsn, release = null, mainCaptureListener = mainCaptureListener)
