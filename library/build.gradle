@@ -10,7 +10,7 @@ def versionPatch = 0
 rootProject.ext.versionCode = versionMajor * 10000 + versionMinor * 100 + versionPatch
 rootProject.ext.libraryVersion = "${versionMajor}.${versionMinor}.${versionPatch}"
 
-group = 'io.vithor.sentry'
+group = 'com.github.Hazer'
 version = libraryVersion
 
 
@@ -52,18 +52,6 @@ dependencies {
     compile 'com.google.code.gson:gson:2.6.2'
 }
 
-ext {
-    libraryName = 'raven-android'
-    artifact = 'raven-android'
-
-    libraryVersion = rootProject.ext.libraryVersion
-
-    libraryDescription = 'A Sentry client for Android'
-
-    licenseName = 'The MIT License (MIT)'
-    licenseUrl = 'http://opensource.org/licenses/mit-license.php'
-    allLicenses = ["MIT"]
-}
 buildscript {
     ext.kotlin_version = '1.0.3'
     repositories {
