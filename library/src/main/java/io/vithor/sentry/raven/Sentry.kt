@@ -101,7 +101,7 @@ class Sentry private constructor(
         return activeNetworkInfo != null && activeNetworkInfo.isConnected
     }
 
-    fun captureEvent(builder: SentryEventBuilder) {
+    fun capture(builder: SentryEventBuilder) {
         try {
             val b = captureListener.beforeCapture(builder)
             val request = SentryEventRequest(b)
@@ -158,11 +158,11 @@ class Sentry private constructor(
 
         private val sentryVersion: Int = 8
 
-        fun init(context: Context, dsn: String, mainCaptureListener: EventCaptureListener) {
+        @JvmStatic fun init(context: Context, dsn: String, mainCaptureListener: EventCaptureListener) {
             init(context = context, dsn = dsn, release = null, mainCaptureListener = mainCaptureListener)
         }
 
-        @JvmOverloads fun init(context: Context, dsn: String, release: String? = null, mainCaptureListener: EventCaptureListener? = null) {
+        @JvmStatic @JvmOverloads fun init(context: Context, dsn: String, release: String? = null, mainCaptureListener: EventCaptureListener? = null) {
             sharedClient = Sentry(context, DSN(dsn), context.packageName, mainCaptureListener)
 
             Sentry.release = release ?: getReleaseFromPackage(context)
@@ -175,12 +175,12 @@ class Sentry private constructor(
         }
 
         @Keep
-        fun addCaptureListener(tag: String, listener: EventCaptureListener) {
+        @JvmStatic fun addCaptureListener(tag: String, listener: EventCaptureListener) {
             sharedClient.captureListener.addListener(tag, listener)
         }
 
         @Keep
-        fun removeCaptureListener(tag: String) {
+        @JvmStatic fun removeCaptureListener(tag: String) {
             sharedClient.captureListener.removeListener(tag)
         }
 
@@ -203,16 +203,16 @@ class Sentry private constructor(
             return params
         }
 
-        @JvmOverloads fun captureMessage(message: String, level: SentryEventLevel = SentryEventLevel.INFO) {
-            sharedClient.captureEvent(SentryEventBuilder().setMessage(message).setLevel(level))
+        @JvmStatic @JvmOverloads fun captureMessage(message: String, level: SentryEventLevel = SentryEventLevel.INFO) {
+            sharedClient.capture(SentryEventBuilder().setMessage(message).setLevel(level))
         }
 
         @Keep
-        @JvmOverloads fun captureException(throwable: Throwable, level: SentryEventLevel = SentryEventLevel.ERROR) {
+        @JvmStatic @JvmOverloads fun captureException(throwable: Throwable, level: SentryEventLevel = SentryEventLevel.ERROR) {
             val message = throwable.message ?: throwable.cause?.message
             val culprit = getCause(throwable, message)
 
-            sharedClient.captureEvent(
+            sharedClient.capture(
                     SentryEventBuilder()
                             .setMessage(message ?: "")
                             .setCulprit(culprit)
@@ -222,8 +222,9 @@ class Sentry private constructor(
         }
 
         @Keep
+        @JvmStatic
         fun captureEvent(builder: SentryEventBuilder) {
-            sharedClient.captureEvent(builder)
+            sharedClient.capture(builder)
         }
 
         fun captureUncaughtException(context: Context, throwable: Throwable) {
