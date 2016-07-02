@@ -32,9 +32,9 @@ internal class DSN(dsnString: String) {
             return dsnUri.port
         }
 
-    val protocol: String? = extractProtocolInfo()
+    val protocol: String? by lazy { extractProtocolInfo() }
 
-    val userKeys: UserKeys = extractUserKeys()
+    val userKeys: UserKeys by lazy { extractUserKeys() }
 
     lateinit var projectId: String
         private set
