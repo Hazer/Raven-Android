@@ -221,6 +221,11 @@ class Sentry private constructor(
             )
         }
 
+        @Keep
+        fun captureEvent(builder: SentryEventBuilder) {
+            sharedClient.captureEvent(builder)
+        }
+
         fun captureUncaughtException(context: Context, throwable: Throwable) {
             val result = StringWriter()
             val printWriter = PrintWriter(result)
