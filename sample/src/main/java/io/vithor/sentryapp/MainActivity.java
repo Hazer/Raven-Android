@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         String yourDSN = "";
-        Sentry.INSTANCE.init(this, yourDSN, "0.4.2", new Sentry.EventCaptureListener() {
+        Sentry.init(this, yourDSN, "0.4.2", new Sentry.EventCaptureListener() {
 
             @NonNull
             @Override
@@ -31,7 +31,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 //        Sentry.init(this, yourDSN);
-        Sentry.INSTANCE.captureMessage("OMG this works woooo");
+        Sentry.captureMessage("OMG this works woooo");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (1==1) {
+            throw new UnsupportedOperationException("Testo");
+        }
     }
 
     @Override
