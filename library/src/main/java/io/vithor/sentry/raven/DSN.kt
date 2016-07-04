@@ -63,7 +63,7 @@ internal class DSN(dsnString: String) {
 
             path = extractPathInfo()
 
-            hostURI = makeHostURI(dsnUri)
+            hostURI = makeHostURI(dsnUri, path ?: "/")
         } catch (e: URISyntaxException) {
             throw InvalidDsnException("Impossible to determine Sentry's URI from the DSN '${dsnString}'", e)
         } catch (e: IllegalStateException) {
@@ -71,9 +71,9 @@ internal class DSN(dsnString: String) {
         }
     }
 
-    private fun makeHostURI(dsn: URI): URI {
+    private fun makeHostURI(dsn: URI, pathWithoutProjectId: String): URI {
         try {
-            return URI(protocol, null, dsn.host, dsn.port, dsn.path, null, null)
+            return URI(protocol, null, dsn.host, dsn.port, pathWithoutProjectId, null, null)
         } catch (e: URISyntaxException) {
             throw InvalidDsnException("Impossible to determine Sentry's URI from the DSN '$dsn'", e)
         }
