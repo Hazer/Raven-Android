@@ -17,7 +17,7 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         String yourDSN = "";
-        Sentry.INSTANCE.init(this, yourDSN, new Sentry.EventCaptureListener() {
+        Sentry.init(this, yourDSN, new Sentry.EventCaptureListener() {
             @NonNull
             @Override
             public SentryEventBuilder beforeCapture(@NonNull SentryEventBuilder builder) {

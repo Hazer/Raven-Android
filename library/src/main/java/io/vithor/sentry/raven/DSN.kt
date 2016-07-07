@@ -7,184 +7,125 @@ import java.net.URLDecoder
 
 /**
  * Created by Vithorio Polten on 2/25/16.
+ * Mandatory {@link #host}, {@link #publicKey}, {@link #secretKey} and {@link #projectId}.
  */
-internal class DSN(dsnString: String) {
-    companion object {
-        val DEFAULT_PROTOCOL = "https"
-        val DEFAULT_HOST = "app.getsentry.com"
-        internal val DEFAULT_BASE_URL by lazy {
-            return@lazy "$DEFAULT_PROTOCOL://$DEFAULT_HOST"
-        }
-    }
+data class DSN(
+        val host: String,
+        val userKeys: UserKeys,
+        val projectId: String,
+        val port: Int = 80,
+        val path: String = "/",
+        val protocol: Protocol = Protocol(),
+        val options: Map<String, String?> = emptyMap()
+) {
+    data class UserKeys(
+            val publicKey: String,
+            val secretKey: String
+    )
 
-    private val dsnUri: URI
-
-    val hostURI: URI
-
-    val path: String?
-
-    val host: String
-        get() {
-            return dsnUri.host ?: DEFAULT_HOST
-        }
-    val port: Int
-        get() {
-            return dsnUri.port
-        }
-
-    val protocol: String? by lazy { extractProtocolInfo() }
-
-    val userKeys: UserKeys by lazy { extractUserKeys() }
-
-    lateinit var projectId: String
-        private set
+    data class Protocol(
+            val name: String = "https",
+            val settings: Set<String> = emptySet<String>()
+    )
 
     val publicKey: String
-       get() {
-           return userKeys.publicKey
-       }
+        get() {
+            return userKeys.publicKey
+        }
 
     val secretKey: String
         get() {
             return userKeys.secretKey
         }
 
-    val options: MutableMap<String, String?> by lazy { extractOptions() }
+    val verifySsl: Boolean by lazy {
+        try {
+            options["verify_ssl"]?.toInt() == 1
+        } catch (e: NumberFormatException) {
+            true
+        }
+    }
 
-    val verifySsl: Boolean by lazy { try { options["verify_ssl"]?.toInt() == 1 } catch (e: NumberFormatException) { true } }
-
-//    lateinit var protocolSettings: MutableList<List<String>>
+    val uri: URI
 
     init {
         try {
-            // Mandatory elements are the [.host], [.publicKey], [.secretKey] and [.projectId].
-
-            dsnUri = URI(dsnString)
-
-            path = extractPathInfo()
-
-            hostURI = makeHostURI(dsnUri, path ?: "/")
+            uri = URI(protocol.name, null, host, port, path, null, null)
         } catch (e: URISyntaxException) {
-            throw InvalidDsnException("Impossible to determine Sentry's URI from the DSN '${dsnString}'", e)
-        } catch (e: IllegalStateException) {
-            throw InvalidDsnException("Impossible to determine Sentry's URI from the DSN '${dsnString}'", e)
+            throw InvalidDsnException("Impossible to determine Sentry's URI from the DSN", e)
         }
-    }
-
-    private fun makeHostURI(dsn: URI, pathWithoutProjectId: String): URI {
-        try {
-            return URI(protocol, null, dsn.host, dsn.port, pathWithoutProjectId, null, null)
-        } catch (e: URISyntaxException) {
-            throw InvalidDsnException("Impossible to determine Sentry's URI from the DSN '$dsn'", e)
-        }
-    }
-
-    /**
-     * Extracts the path and the project ID from the DSN provided as an `URI`.
-     */
-    private fun extractPathInfo(): String? {
-        val uriPath = dsnUri.path ?: return null
-        val slashIndex = uriPath.lastIndexOf("/")
-        if (slashIndex == -1) {
-            throwMissingElements("project id")
-        }
-        val projectIdStart = slashIndex + 1
-        val path = uriPath.substring(0, projectIdStart)
-
-        projectId = uriPath.substring(projectIdStart)
-
-        if (projectId.isEmpty()) {
-            throwMissingElements("project id")
-        }
-        return path
-    }
-
-
-
-    /**
-     * Extracts the scheme and additional protocol options from the DSN provided as an `URI`.
-     */
-    private fun extractProtocolInfo(): String {
-        val scheme = dsnUri.scheme ?: return DEFAULT_PROTOCOL
-        val schemeDetails = scheme.split("\\+".toRegex()).dropLastWhile({ it.isEmpty() }).toTypedArray()
-//        protocolSettings = mutableListOf(schemeDetails.toList().subList(0, schemeDetails.size - 1))
-        return schemeDetails[schemeDetails.size - 1]
-    }
-
-    /**
-     * Extracts the public and secret keys from the DSN provided as an `URI`.
-     */
-    private fun extractUserKeys(): UserKeys {
-        val userInfo: String? = dsnUri.userInfo
-        if (userInfo != null) {
-            val userDetails = userInfo.split(":".toRegex())
-            if (userDetails.size < 2) {
-                throw InvalidDsnException("Invalid DSN, the following properties aren'throwable set {public key${if (userDetails.size == 0) ", secret key" else ""}}")
-            }
-            return UserKeys(userDetails[0], userDetails[1])
-        }
-        throw InvalidDsnException("Invalid DSN, the following properties aren'throwable set {public key, secret key}")
-    }
-
-    /**
-     * Extracts the DSN options from the DSN provided as an {@code URI}.
-     */
-    private fun extractOptions(): MutableMap<String, String?> {
-        val query = dsnUri.query
-        if (query.isNullOrEmpty()) return mutableMapOf()
-
-        val foundOptions = mutableMapOf<String, String?>()
-
-        for (optionPair in query.split("&")) {
-            try {
-                val pairDetails = optionPair.split("=")
-                val key = URLDecoder.decode(pairDetails[0], "UTF-8")
-                val value = if (pairDetails.size > 1) URLDecoder.decode(pairDetails[1], "UTF-8") else null
-                foundOptions.put(key, value)
-            } catch (e: UnsupportedEncodingException) {
-                throw IllegalArgumentException("Impossible to decode the query parameter '$optionPair'", e)
-            }
-        }
-        return foundOptions
-    }
-
-
-    private fun throwMissingElements(vararg elements: String) {
-        throw InvalidDsnException("Invalid DSN, the following properties aren'throwable set '${elements.joinToString(", ")}'")
-    }
-
-    override fun hashCode(): Int {
-        var result = publicKey.hashCode()
-        result = 31 * result + projectId.hashCode()
-        result = 31 * result + host.hashCode()
-        result = 31 * result + port
-        result = 31 * result + (path?.hashCode() ?: 0)
-        return result
     }
 
     override fun toString(): String {
-        return "Dsn{uri=$dsnUri}"
+        return "Dsn{uri=$uri}"
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other?.javaClass != javaClass) return false
+    companion object {
+        fun from(dsnString: String): DSN {
+            try {
+                return from(URI.create(dsnString))
+            } catch (e: URISyntaxException) {
+                throw InvalidDsnException("Impossible to determine Sentry's URI from the DSN '${dsnString}'", e)
+            } catch (e: IllegalStateException) {
+                throw InvalidDsnException("Impossible to determine Sentry's URI from the DSN '${dsnString}'", e)
+            }
+        }
 
-        other as DSN
+        fun from(dsnURI: URI): DSN {
+            validatePath(dsnURI)
 
-        if (dsnUri != other.dsnUri) return false
+            val (path, projectId) = dsnURI.path.let { uriPath ->
+                val projectIdStart = uriPath.lastIndexOf("/") + 1
+                return@let Pair(
+                        uriPath.substring(0, projectIdStart),
+                        uriPath.substring(projectIdStart)
+                )
+            }
 
-        return true
-    }
+            val protocol = dsnURI.scheme?.let { scheme ->
+                val schemeDetails = scheme.split("\\+".toRegex()).dropLastWhile({ it.isEmpty() })
+                return@let Protocol(
+                        name = schemeDetails[schemeDetails.size - 1],
+                        settings = schemeDetails.subList(0, schemeDetails.size - 1).toSet())
+            }
 
-    data class UserKeys(
-            val publicKey: String,
-            val secretKey: String
-    )
+            val (publicKey, secretKey) = dsnURI.userInfo.split(':').apply {
+                when (size) {
+                    0 -> throw InvalidDsnException("Invalid DSN, missing publicKey and secretKey.")
+                    1 -> throw InvalidDsnException("Invalid DSN, missing secretKey.")
+                }
+            }
 
-    inner class InvalidDsnException : RuntimeException {
-        constructor(message: String, cause: Throwable) : super(message, cause)
+            val options = dsnURI.query?.let { query ->
+                return@let mutableMapOf<String, String?>().apply {
+                    for (optionPair in query.split('&')) {
+                        try {
+                            val (key, value) = optionPair.split('=').apply {
+                                map { URLDecoder.decode(it, "UTF-8") }
+                            }
+                            put(key, value)
+                        } catch (e: UnsupportedEncodingException) {
+                            throw IllegalArgumentException("Impossible to decode the query parameter '$optionPair'", e)
+                        }
+                    }
+                }
+            }
 
-        constructor(message: String) : super(message)
+            return DSN(
+                    host = dsnURI.host,
+                    port = dsnURI.port,
+                    path = path,
+                    projectId = projectId,
+                    protocol = protocol ?: Protocol(),
+                    userKeys = UserKeys(publicKey = publicKey, secretKey = secretKey),
+                    options = options ?: emptyMap()
+            )
+        }
+
+        private fun validatePath(dsnURI: URI) {
+            if (dsnURI.path == null) {
+                throw InvalidDsnException("Invalid DSN, missing path and projectId for uri.")
+            }
+        }
     }
 }

@@ -56,7 +56,7 @@ class Sentry private constructor(
             return
         }
 
-        val url = "${dsn.hostURI}api/${dsn.projectId}/store/"
+        val url = "${dsn.uri}api/${dsn.projectId}/store/"
         val postClient = url.httpPost()
                 .header(
                         "X-Sentry-Auth" to createXSentryAuthHeader(),
@@ -134,7 +134,7 @@ class Sentry private constructor(
     }
 
     private fun createXSentryAuthHeader(): String {
-        Log.d("Sentry", "URI - " + dsn.hostURI)
+        Log.d("Sentry", "URI - " + dsn.uri)
 
         return "Sentry sentry_version=$sentryVersion," +
                 "sentry_client=$sentryClientInfo," +
@@ -159,11 +159,15 @@ class Sentry private constructor(
         private val sentryVersion: Int = 4
 
         @JvmStatic fun init(context: Context, dsn: String, mainCaptureListener: EventCaptureListener) {
-            init(context = context, dsn = dsn, release = null, mainCaptureListener = mainCaptureListener)
+            init(context = context, dsn = DSN.from(dsn), release = null, mainCaptureListener = mainCaptureListener)
         }
 
         @JvmStatic @JvmOverloads fun init(context: Context, dsn: String, release: String? = null, mainCaptureListener: EventCaptureListener? = null) {
-            sharedClient = Sentry(context, DSN(dsn), context.packageName, mainCaptureListener)
+            init(context, DSN.from(dsn), release, mainCaptureListener)
+        }
+
+        @JvmStatic @JvmOverloads fun init(context: Context, dsn: DSN, release: String? = null, mainCaptureListener: EventCaptureListener? = null) {
+            sharedClient = Sentry(context, dsn, context.packageName, mainCaptureListener)
 
             Sentry.release = release ?: getReleaseFromPackage(context)
 
@@ -185,7 +189,7 @@ class Sentry private constructor(
         }
 
         private fun getAllGetParams(dsn: DSN): List<Pair<String, Any?>>? {
-            val uri = Uri.parse(dsn.hostURI.toASCIIString())
+            val uri = Uri.parse(dsn.uri.toASCIIString())
             val paramNames = uri.queryParameterNames
 
             val params = mutableListOf<Pair<String, String?>>()
